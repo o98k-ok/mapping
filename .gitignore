@@ -16,6 +16,10 @@ DerivedData/
 *.dSYM.zip
 *.dSYM
 
+# Generated
+Mapping.xcodeproj/
+scripts/
+
 # macOS
 .DS_Store
 *.swp
