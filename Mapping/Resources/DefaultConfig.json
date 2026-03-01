@@ -1,0 +1,20 @@
+{
+  "groups": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "示例",
+      "color": "#5B8DEF",
+      "icon": "star",
+      "isEnabled": true,
+      "mappings": [
+        {
+          "id": "00000000-0000-0000-0001-000000000001",
+          "name": "打开浏览器",
+          "isEnabled": true,
+          "trigger": { "type": "hotkey", "key": "g", "modifiers": ["option"] },
+          "actions": [{ "type": "openApp", "bundleId": "com.apple.Safari", "appName": "Safari" }]
+        }
+      ]
+    }
+  ]
+}
