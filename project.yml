@@ -21,6 +21,8 @@ targets:
           - Resources/Info.plist
     info:
       path: Mapping/Resources/Info.plist
+      properties:
+        LSUIElement: true
     entitlements:
       path: Mapping/Mapping.entitlements
     settings:

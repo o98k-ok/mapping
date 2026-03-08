@@ -8,11 +8,9 @@ APP_PATH="$BUILD_DIR/$APP_NAME.app"
 
 cd "$PROJECT_DIR"
 
-# Generate Xcode project if needed
-if [ ! -d "$APP_NAME.xcodeproj" ]; then
-    echo "⚙️  Generating Xcode project..."
-    xcodegen generate
-fi
+# Keep the checked-in Xcode project in sync with project.yml.
+echo "⚙️  Generating Xcode project..."
+xcodegen generate
 
 # Build
 echo "🔨 Building $APP_NAME..."
