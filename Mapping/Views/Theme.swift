@@ -31,6 +31,10 @@ enum Theme {
     // Popover size
     static let popoverWidth: CGFloat = 360
     static let popoverMaxHeight: CGFloat = 520
+    // Height reserved for the non-scrolling chrome (header + dividers + footer).
+    static let popoverChromeHeight: CGFloat = 92
+    // Max height the scrollable list may take before it starts scrolling.
+    static var scrollMaxHeight: CGFloat { popoverMaxHeight - popoverChromeHeight }
 
     static func groupColor(_ hex: String) -> Color {
         Color(hex: hex)
