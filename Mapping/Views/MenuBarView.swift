@@ -11,6 +11,7 @@ enum ViewMode: Equatable {
 struct MenuBarView: View {
     @EnvironmentObject var engine: MappingEngine
     @State private var viewMode: ViewMode = .list
+    @State private var contentHeight: CGFloat = 0
 
     var body: some View {
         Group {
@@ -154,7 +155,18 @@ struct MenuBarView: View {
                 }
             }
             .padding(10)
+            .background(
+                // Measure the natural content height so the ScrollView can be
+                // given a definite frame. Inside MenuBarExtra(.window) the window
+                // sizes-to-fit, proposing a nil height; without a definite frame a
+                // ScrollView collapses to zero and the whole list disappears.
+                GeometryReader { proxy in
+                    Color.clear.preference(key: ContentHeightPreferenceKey.self, value: proxy.size.height)
+                }
+            )
         }
+        .frame(height: min(max(contentHeight, 1), Theme.scrollMaxHeight))
+        .onPreferenceChange(ContentHeightPreferenceKey.self) { contentHeight = $0 }
     }
 
     private func bindingForGroup(_ id: UUID) -> Binding<MappingGroup> {
@@ -211,5 +223,12 @@ struct MenuBarView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+    }
+}
+
+private struct ContentHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
