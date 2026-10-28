@@ -24,6 +24,7 @@ struct EditMappingView: View {
                     actionsSection
                 }
                 .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             Divider().background(Theme.textTertiary.opacity(0.3))
             footer
@@ -38,22 +39,32 @@ struct EditMappingView: View {
     private var header: some View {
         HStack {
             Button(action: onCancel) {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Image(systemName: "chevron.left")
+                        .font(.system(size: 11, weight: .semibold))
                     Text("返回")
+                        .font(.system(size: 12))
                 }
-                .font(.system(size: 12))
-                .foregroundColor(Theme.accentBlue)
+                .foregroundColor(Theme.textSecondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(Theme.cardBackgroundHover.opacity(0.4))
+                .cornerRadius(5)
             }
             .buttonStyle(.plain)
+
             Spacer()
+
             Text(isEditing ? "编辑映射" : "新建映射")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Theme.textPrimary)
+
             Spacer()
+
+            // Balance spacer
             Color.clear.frame(width: 50, height: 1)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 14)
         .padding(.vertical, 10)
     }
 
@@ -61,15 +72,22 @@ struct EditMappingView: View {
 
     private var nameSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            sectionLabel("名称")
-            TextField("映射名称", text: $name)
+            sectionLabel("映射名称")
+            TextField("输入快捷键或映射用途名称", text: $name)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .padding(8)
-                .background(Theme.cardBackground)
-                .cornerRadius(8)
+                .font(.system(size: 12))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Theme.inputBackground)
+                .cornerRadius(7)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7)
+                        .stroke(Theme.inputBorder, lineWidth: 1)
+                )
                 .foregroundColor(Theme.textPrimary)
+                .frame(maxWidth: .infinity)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Trigger
@@ -83,157 +101,239 @@ struct EditMappingView: View {
                 Text("应用激活").tag(MappingTrigger.TriggerType.appActivation)
             }
             .pickerStyle(.segmented)
+            .frame(maxWidth: .infinity)
 
             if triggerType == .hotkey {
                 HotkeyRecorderView(key: $triggerKey, modifiers: $triggerModifiers)
+                    .frame(maxWidth: .infinity)
+            } else {
+                Text("当匹配的应用激活或切换到前台时，自动执行下方动作")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.textTertiary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Actions
 
     private var actionsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(alignment: .center) {
                 sectionLabel("动作列表")
                 Spacer()
                 Button(action: addAction) {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 3) {
                         Image(systemName: "plus")
-                        Text("添加")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("添加动作")
+                            .font(.system(size: 11, weight: .medium))
                     }
-                    .font(.system(size: 11))
                     .foregroundColor(Theme.accentBlue)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Theme.accentBlue.opacity(0.12))
+                    .cornerRadius(5)
                 }
                 .buttonStyle(.plain)
             }
+            .frame(maxWidth: .infinity)
 
             if actions.isEmpty {
-                Text("暂无动作，点击添加")
-                    .font(.system(size: 12))
+                Text("暂无动作，点击右上角添加")
+                    .font(.system(size: 11))
                     .foregroundColor(Theme.textTertiary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 16)
                     .background(Theme.cardBackground)
                     .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Theme.cardBorder, lineWidth: 1)
+                    )
             } else {
-                ForEach(Array(actions.enumerated()), id: \.offset) { index, _ in
-                    actionEditor(index: index)
+                ForEach(actions) { action in
+                    actionEditor(for: action.id)
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func actionEditor(index: Int) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("动作 \(index + 1)")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-                Spacer()
-                Button(action: { actions.remove(at: index) }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.statusInactive.opacity(0.6))
-                }
-                .buttonStyle(.plain)
-            }
-
-            // Type picker
-            Picker("", selection: $actions[index].type) {
-                ForEach(MappingAction.ActionType.allCases, id: \.self) { t in
-                    Text(t.displayName).tag(t)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            // Type-specific fields
-            switch actions[index].type {
-            case .openApp:
-                appPickerField(index: index)
-            case .sendKeyCombo:
-                HotkeyRecorderView(
-                    key: Binding(
-                        get: { actions[index].key ?? "" },
-                        set: { actions[index].key = $0 }
-                    ),
-                    modifiers: Binding(
-                        get: { actions[index].modifiers ?? [] },
-                        set: { actions[index].modifiers = $0 }
-                    )
-                )
-            case .runShellScript:
-                TextField("脚本命令", text: Binding(
-                    get: { actions[index].script ?? "" },
-                    set: { actions[index].script = $0 }
-                ))
-                .textFieldStyle(.plain)
-                .font(.system(size: 12, design: .monospaced))
-                .padding(8)
-                .background(Theme.cardBackground)
-                .cornerRadius(6)
-                .foregroundColor(Theme.textPrimary)
-            case .delay:
-                HStack {
-                    TextField("毫秒", value: Binding(
-                        get: { actions[index].delayMs ?? 50 },
-                        set: { actions[index].delayMs = $0 }
-                    ), format: .number)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 13, design: .monospaced))
-                    .padding(8)
-                    .background(Theme.cardBackground)
-                    .cornerRadius(6)
-                    .foregroundColor(Theme.textPrimary)
-                    .frame(width: 80)
-                    Text("ms")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.textTertiary)
+    @ViewBuilder
+    private func actionEditor(for actionId: UUID) -> some View {
+        if let index = actions.firstIndex(where: { $0.id == actionId }) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center) {
+                    Text("动作 \(index + 1)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(Theme.textSecondary)
                     Spacer()
+                    Button(action: { actions.removeAll { $0.id == actionId } }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(Theme.textTertiary)
+                            .frame(width: 18, height: 18)
+                            .background(Theme.cardBackgroundHover.opacity(0.7))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("删除动作")
+                }
+
+                // Type picker
+                Picker("", selection: $actions[index].type) {
+                    ForEach(MappingAction.ActionType.allCases, id: \.self) { t in
+                        Text(t.displayName).tag(t)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: .infinity)
+
+                // Type-specific fields
+                switch actions[index].type {
+                case .openApp:
+                    appPickerField(index: index)
+                case .sendKeyCombo:
+                    HotkeyRecorderView(
+                        key: Binding(
+                            get: { actions.indices.contains(index) ? (actions[index].key ?? "") : "" },
+                            set: { if actions.indices.contains(index) { actions[index].key = $0 } }
+                        ),
+                        modifiers: Binding(
+                            get: { actions.indices.contains(index) ? (actions[index].modifiers ?? []) : [] },
+                            set: { if actions.indices.contains(index) { actions[index].modifiers = $0 } }
+                        )
+                    )
+                    .frame(maxWidth: .infinity)
+                case .runShellScript:
+                    TextField("输入要执行的终端脚本命令", text: Binding(
+                        get: { actions.indices.contains(index) ? (actions[index].script ?? "") : "" },
+                        set: { if actions.indices.contains(index) { actions[index].script = $0 } }
+                    ))
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12, design: .monospaced))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Theme.inputBackground)
+                    .cornerRadius(7)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7)
+                            .stroke(Theme.inputBorder, lineWidth: 1)
+                    )
+                    .foregroundColor(Theme.textPrimary)
+                    .frame(maxWidth: .infinity)
+                case .delay:
+                    HStack(spacing: 8) {
+                        Text("延迟时长")
+                            .font(.system(size: 12))
+                            .foregroundColor(Theme.textSecondary)
+                        Spacer()
+                        TextField("毫秒", value: Binding(
+                            get: { actions.indices.contains(index) ? (actions[index].delayMs ?? 50) : 50 },
+                            set: { if actions.indices.contains(index) { actions[index].delayMs = $0 } }
+                        ), format: .number)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 12, design: .monospaced))
+                        .multilineTextAlignment(.trailing)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(Theme.inputBackground)
+                        .cornerRadius(6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Theme.inputBorder, lineWidth: 1)
+                        )
+                        .foregroundColor(Theme.textPrimary)
+                        .frame(width: 70)
+                        Text("ms")
+                            .font(.system(size: 11))
+                            .foregroundColor(Theme.textTertiary)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Theme.inputBackground.opacity(0.5))
+                    .cornerRadius(7)
+                    .frame(maxWidth: .infinity)
                 }
             }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.cardBackground)
+            .cornerRadius(Theme.cardCornerRadius)
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
+                    .stroke(Theme.cardBorder, lineWidth: 1)
+            )
         }
-        .padding(10)
-        .background(Theme.cardBackground)
-        .cornerRadius(8)
     }
 
     private func appPickerField(index: Int) -> some View {
+        var seen = Set<String>()
         let apps = NSWorkspace.shared.runningApplications
             .filter { $0.activationPolicy == .regular }
             .compactMap { app -> (String, String, NSImage?)? in
-                guard let bid = app.bundleIdentifier, let n = app.localizedName else { return nil }
+                guard let bid = app.bundleIdentifier,
+                      let n = app.localizedName,
+                      !seen.contains(bid) else { return nil }
+                seen.insert(bid)
                 return (bid, n, app.icon)
             }
             .sorted { $0.1.localizedCompare($1.1) == .orderedAscending }
 
-        return VStack(spacing: 4) {
-            Picker("", selection: Binding(
-                get: { actions[index].bundleId ?? "" },
-                set: { newValue in
-                    actions[index].bundleId = newValue
-                    actions[index].appName = apps.first(where: { a in a.0 == newValue })?.1
-                }
-            )) {
-                Text("选择应用").tag("")
-                ForEach(apps, id: \.0) { bid, name, _ in
-                    Text(name).tag(bid)
+        let currentBundleId = actions.indices.contains(index) ? (actions[index].bundleId ?? "") : ""
+        let currentApp = apps.first(where: { $0.0 == currentBundleId })
+
+        return Menu {
+            ForEach(apps, id: \.0) { bid, name, icon in
+                Button(action: {
+                    if actions.indices.contains(index) {
+                        actions[index].bundleId = bid
+                        actions[index].appName = name
+                    }
+                }) {
+                    Text(name)
                 }
             }
-            .pickerStyle(.menu)
-
-            if let name = actions[index].appName, !name.isEmpty {
-                HStack {
-                    Text(name)
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.accentBlue)
-                    Text(actions[index].bundleId ?? "")
+        } label: {
+            HStack(spacing: 8) {
+                if let app = currentApp {
+                    if let icon = app.2 {
+                        Image(nsImage: icon)
+                            .resizable()
+                            .frame(width: 16, height: 16)
+                    }
+                    Text(app.1)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Theme.textPrimary)
+                    Spacer()
+                    Text(app.0)
                         .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(Theme.textTertiary)
+                } else {
+                    Text("点击选择目标应用...")
+                        .font(.system(size: 12))
                         .foregroundColor(Theme.textTertiary)
                     Spacer()
                 }
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 10))
+                    .foregroundColor(Theme.textTertiary)
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(Theme.inputBackground)
+            .cornerRadius(7)
+            .overlay(
+                RoundedRectangle(cornerRadius: 7)
+                    .stroke(Theme.inputBorder, lineWidth: 1)
+            )
+            .frame(maxWidth: .infinity)
         }
+        .menuStyle(.borderlessButton)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Footer
@@ -245,14 +345,16 @@ struct EditMappingView: View {
                 .buttonStyle(.plain)
                 .foregroundColor(Theme.textSecondary)
                 .font(.system(size: 12))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
 
             Button(action: save) {
                 Text("保存")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
-                    .background(canSave ? Theme.accentBlue : Theme.textTertiary)
+                    .background(canSave ? Theme.accentBlue : Theme.textTertiary.opacity(0.6))
                     .cornerRadius(6)
             }
             .buttonStyle(.plain)

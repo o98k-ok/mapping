@@ -17,6 +17,10 @@ enum KeySimulator {
         keyDown.flags = flags
         keyUp.flags = flags
 
+        // Tag simulated events so our own EventTap doesn't re-intercept them in a loop
+        keyDown.setIntegerValueField(.eventSourceUserData, value: 0x4D4150)
+        keyUp.setIntegerValueField(.eventSourceUserData, value: 0x4D4150)
+
         if let pid {
             keyDown.postToPid(pid)
             keyUp.postToPid(pid)

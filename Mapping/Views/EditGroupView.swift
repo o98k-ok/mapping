@@ -47,12 +47,17 @@ struct EditGroupView: View {
     private var header: some View {
         HStack {
             Button(action: onCancel) {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Image(systemName: "chevron.left")
+                        .font(.system(size: 11, weight: .semibold))
                     Text("返回")
+                        .font(.system(size: 12))
                 }
-                .font(.system(size: 12))
-                .foregroundColor(Theme.accentBlue)
+                .foregroundColor(Theme.textSecondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(Theme.cardBackgroundHover.opacity(0.4))
+                .cornerRadius(5)
             }
             .buttonStyle(.plain)
 
@@ -66,7 +71,7 @@ struct EditGroupView: View {
             // Balance spacer
             Color.clear.frame(width: 50, height: 1)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 14)
         .padding(.vertical, 10)
     }
 
@@ -74,13 +79,18 @@ struct EditGroupView: View {
 
     private var nameSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            sectionLabel("名称")
-            TextField("分组名称", text: $name)
+            sectionLabel("分组名称")
+            TextField("输入分组名称", text: $name)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .padding(8)
-                .background(Theme.cardBackground)
-                .cornerRadius(8)
+                .font(.system(size: 12))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Theme.inputBackground)
+                .cornerRadius(7)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7)
+                        .stroke(Theme.inputBorder, lineWidth: 1)
+                )
                 .foregroundColor(Theme.textPrimary)
         }
     }
@@ -160,23 +170,62 @@ struct EditGroupView: View {
                 }
 
                 // Custom bundle ID input
-                HStack {
-                    TextField("自定义 Bundle ID", text: $customBundleId)
+                HStack(spacing: 8) {
+                    TextField("输入自定义 Bundle ID 添加", text: $customBundleId)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 12))
-                        .padding(6)
-                        .background(Theme.cardBackground)
+                        .font(.system(size: 11, design: .monospaced))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Theme.inputBackground)
                         .cornerRadius(6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Theme.inputBorder, lineWidth: 1)
+                        )
                         .foregroundColor(Theme.textPrimary)
                     Button(action: {
                         guard !customBundleId.isEmpty else { return }
                         selectedBundleIds.insert(customBundleId)
                         customBundleId = ""
                     }) {
-                        Image(systemName: "plus.circle.fill")
-                            .foregroundColor(Theme.accentBlue)
+                        HStack(spacing: 3) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 10, weight: .bold))
+                            Text("添加")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(Theme.accentBlue)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Theme.accentBlue.opacity(0.12))
+                        .cornerRadius(5)
                     }
                     .buttonStyle(.plain)
+                }
+
+                // Show selected bundle IDs that are not in running apps
+                let extraIds = selectedBundleIds.filter { id in !runningApps.contains { $0.bundleId == id } }
+                if !extraIds.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(Array(extraIds).sorted(), id: \.self) { bid in
+                            HStack(spacing: 6) {
+                                Text(bid)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundColor(Theme.textPrimary)
+                                Spacer()
+                                Button(action: { selectedBundleIds.remove(bid) }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(Theme.textTertiary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Theme.cardBackground)
+                            .cornerRadius(6)
+                        }
+                    }
                 }
             }
         }
@@ -217,11 +266,14 @@ struct EditGroupView: View {
     }
 
     private var runningApps: [AppEntry] {
-        NSWorkspace.shared.runningApplications
+        var seen = Set<String>()
+        return NSWorkspace.shared.runningApplications
             .filter { $0.activationPolicy == .regular }
             .compactMap { app in
                 guard let bundleId = app.bundleIdentifier,
-                      let name = app.localizedName else { return nil }
+                      let name = app.localizedName,
+                      !seen.contains(bundleId) else { return nil }
+                seen.insert(bundleId)
                 return AppEntry(bundleId: bundleId, name: name, icon: app.icon)
             }
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }

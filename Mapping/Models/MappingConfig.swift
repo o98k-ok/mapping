@@ -1,10 +1,65 @@
 import Foundation
 import Carbon
 
+// MARK: - Theme Mode
+
+enum AppThemeMode: String, Codable, CaseIterable {
+    case dark
+    case light
+    case system
+
+    var iconName: String {
+        switch self {
+        case .dark: return "moon.fill"
+        case .light: return "sun.max.fill"
+        case .system: return "circle.righthalf.filled"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .dark: return "深色"
+        case .light: return "浅色"
+        case .system: return "跟随系统"
+        }
+    }
+
+    var next: AppThemeMode {
+        switch self {
+        case .dark: return .light
+        case .light: return .system
+        case .system: return .dark
+        }
+    }
+}
+
 // MARK: - Configuration Root
 
 struct MappingConfiguration: Codable {
+    var theme: AppThemeMode
     var groups: [MappingGroup]
+
+    enum CodingKeys: String, CodingKey {
+        case theme
+        case groups
+    }
+
+    init(theme: AppThemeMode = .dark, groups: [MappingGroup] = []) {
+        self.theme = theme
+        self.groups = groups
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        theme = (try? c.decode(AppThemeMode.self, forKey: .theme)) ?? .dark
+        groups = (try? c.decode([MappingGroup].self, forKey: .groups)) ?? []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(theme, forKey: .theme)
+        try c.encode(groups, forKey: .groups)
+    }
 }
 
 // MARK: - Group

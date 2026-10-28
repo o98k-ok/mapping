@@ -24,11 +24,23 @@ enum KeyCodeMap {
         "home": 0x73, "end": 0x77, "pageup": 0x74, "pagedown": 0x79,
     ]
 
+    // Preferred canonical names for key codes that have multiple aliases
+    private static let canonicalNames: [UInt16: String] = [
+        0x24: "return",
+        0x30: "tab",
+        0x31: "space",
+        0x33: "delete",
+        0x35: "escape",
+    ]
+
     static func keyCode(for key: String) -> UInt16? {
         map[key.lowercased()]
     }
 
     static func keyName(for code: UInt16) -> String? {
-        map.first(where: { $0.value == code })?.key
+        if let preferred = canonicalNames[code] {
+            return preferred
+        }
+        return map.first(where: { $0.value == code })?.key
     }
 }

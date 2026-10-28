@@ -27,15 +27,16 @@ struct MappingRowView: View {
                 triggerBadge(key: key, modifiers: mapping.trigger.modifiers ?? [])
             } else if mapping.trigger.type == .appActivation {
                 Text("自动")
-                    .font(.system(size: 9, weight: .medium))
+                    .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(Theme.accentGreen)
-                    .padding(.horizontal, 6)
+                    .padding(.horizontal, 5)
                     .padding(.vertical, 2)
-                    .background(Theme.accentGreen.opacity(0.15))
+                    .background(Theme.accentGreen.opacity(0.12))
                     .cornerRadius(4)
             }
 
             actionIcon
+                .padding(.leading, 2)
 
             // Hover action buttons
             if isHovered {
@@ -73,34 +74,38 @@ struct MappingRowView: View {
         let modSymbols = modifiers.map(\.symbol).joined()
         let display = modSymbols + key.uppercased()
         return Text(display)
-            .font(.system(size: 10, weight: .medium, design: .monospaced))
-            .foregroundColor(Theme.accentCyan)
+            .font(.system(size: 10, weight: .semibold, design: .rounded))
+            .foregroundColor(Theme.keycapText)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(Theme.accentCyan.opacity(0.12))
+            .background(Theme.keycapBackground)
             .cornerRadius(4)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Theme.keycapBorder, lineWidth: 0.8)
+            )
     }
 
     @ViewBuilder
     private var actionIcon: some View {
         let type = mapping.actions.first?.type ?? .sendKeyCombo
-        switch type {
-        case .openApp:
-            Image(systemName: "app.badge")
-                .font(.system(size: 10))
-                .foregroundColor(Theme.accentBlue)
-        case .sendKeyCombo:
-            Image(systemName: "keyboard")
-                .font(.system(size: 10))
-                .foregroundColor(Theme.accentOrange)
-        case .runShellScript:
-            Image(systemName: "terminal")
-                .font(.system(size: 10))
-                .foregroundColor(Theme.accentPurple)
-        case .delay:
-            Image(systemName: "clock")
-                .font(.system(size: 10))
-                .foregroundColor(Theme.textTertiary)
+        Group {
+            switch type {
+            case .openApp:
+                Image(systemName: "arrow.up.forward.app")
+                    .foregroundColor(Theme.accentBlue)
+            case .sendKeyCombo:
+                Image(systemName: "keyboard")
+                    .foregroundColor(Theme.accentOrange)
+            case .runShellScript:
+                Image(systemName: "terminal")
+                    .foregroundColor(Theme.accentPurple)
+            case .delay:
+                Image(systemName: "clock")
+                    .foregroundColor(Theme.textTertiary)
+            }
         }
+        .font(.system(size: 10, weight: .semibold))
+        .frame(width: 16, height: 16)
     }
 }

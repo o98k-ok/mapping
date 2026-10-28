@@ -8,6 +8,7 @@ struct MappingApp: App {
         MenuBarExtra {
             MenuBarView()
                 .environmentObject(engine)
+                .preferredColorScheme(engine.colorScheme)
         } label: {
             Image(systemName: "command")
         }

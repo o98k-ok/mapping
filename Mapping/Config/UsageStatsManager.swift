@@ -32,6 +32,8 @@ struct UsageStats: Codable {
 
 enum UsageStatsManager {
     static let statsFile = ConfigManager.configDir.appendingPathComponent("stats.json")
+    private static let saveQueue = DispatchQueue(label: "com.shadow.mapping.stats", qos: .utility)
+    private static var pendingWorkItem: DispatchWorkItem?
 
     static func load() -> UsageStats {
         guard FileManager.default.fileExists(atPath: statsFile.path),
@@ -40,6 +42,17 @@ enum UsageStatsManager {
             return UsageStats()
         }
         return stats
+    }
+
+    static func saveDebounced(_ stats: UsageStats) {
+        saveQueue.async {
+            pendingWorkItem?.cancel()
+            let workItem = DispatchWorkItem {
+                save(stats)
+            }
+            pendingWorkItem = workItem
+            saveQueue.asyncAfter(deadline: .now() + 1.0, execute: workItem)
+        }
     }
 
     static func save(_ stats: UsageStats) {

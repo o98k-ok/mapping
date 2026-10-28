@@ -29,13 +29,16 @@ struct GroupSectionView: View {
                     // Add mapping button
                     Button(action: onAddMapping) {
                         HStack(spacing: 4) {
-                            Image(systemName: "plus.circle")
+                            Image(systemName: "plus")
+                                .font(.system(size: 10, weight: .semibold))
                             Text("添加映射")
+                                .font(.system(size: 11, weight: .medium))
                         }
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.textTertiary)
+                        .foregroundColor(Theme.textSecondary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 5)
+                        .background(Theme.popoverBackground.opacity(0.5))
+                        .cornerRadius(6)
                     }
                     .buttonStyle(.plain)
                 }
@@ -45,21 +48,26 @@ struct GroupSectionView: View {
         }
         .background(Theme.cardBackground)
         .cornerRadius(Theme.cardCornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.cardCornerRadius)
+                .stroke(Theme.cardBorder, lineWidth: 1)
+        )
     }
 
     // MARK: - Header
 
     private var groupHeader: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .center, spacing: 8) {
             Button(action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }) {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(Theme.groupColor(group.color))
-                        .frame(width: 8, height: 8)
-
-                    Image(systemName: group.icon)
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.textSecondary)
+                HStack(alignment: .center, spacing: 8) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Theme.groupColor(group.color).opacity(0.18))
+                            .frame(width: 20, height: 20)
+                        Image(systemName: group.icon)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(Theme.groupColor(group.color))
+                    }
 
                     Text(group.name)
                         .font(.system(size: 13, weight: .semibold))
@@ -115,8 +123,8 @@ struct GroupSectionView: View {
                 .font(.system(size: 9, weight: .bold))
                 .foregroundColor(Theme.textTertiary)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
         .onHover { isHeaderHovered = $0 }
     }
 

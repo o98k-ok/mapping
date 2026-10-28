@@ -6,15 +6,13 @@ APP_NAME="Mapping"
 BUILD_APP_PATH="${ROOT_DIR}/build/${APP_NAME}.app"
 INSTALL_PATH="/Applications/${APP_NAME}.app"
 
-if [[ ! -d "${BUILD_APP_PATH}" ]]; then
-  echo "==> Build artifact not found, building first"
-  "${ROOT_DIR}/build.sh"
-fi
+"${ROOT_DIR}/build.sh"
 
 osascript -e "quit app \"${APP_NAME}\"" 2>/dev/null || true
 sleep 0.5
 
 rm -rf "${INSTALL_PATH}"
 cp -R "${BUILD_APP_PATH}" "${INSTALL_PATH}"
+touch "${INSTALL_PATH}"
 
-echo "==> Installed to ${INSTALL_PATH}"
+echo "==> Installed and signed to ${INSTALL_PATH}"

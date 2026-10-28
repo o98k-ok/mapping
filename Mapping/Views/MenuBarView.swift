@@ -10,6 +10,7 @@ enum ViewMode: Equatable {
 
 struct MenuBarView: View {
     @EnvironmentObject var engine: MappingEngine
+    @Environment(\.colorScheme) private var systemColorScheme
     @State private var viewMode: ViewMode = .list
     @State private var contentHeight: CGFloat = 0
 
@@ -46,6 +47,8 @@ struct MenuBarView: View {
             }
         }
         .animation(.easeInOut(duration: 0.15), value: viewMode)
+        .id(engine.config.theme)
+        .preferredColorScheme(engine.colorScheme)
     }
 
     // MARK: - List View
@@ -66,7 +69,7 @@ struct MenuBarView: View {
     // MARK: - Header
 
     private var headerView: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(
@@ -82,30 +85,40 @@ struct MenuBarView: View {
                     .foregroundColor(.white)
             }
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("Mapping")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(Theme.textPrimary)
                 Text("快捷键管理")
                     .font(.system(size: 10))
                     .foregroundColor(Theme.textSecondary)
             }
 
-            Spacer()
+            Spacer(minLength: 6)
 
-            // Stats
+            // Stats (Prevent wrapping by using explicit subviews & fixedSize)
             HStack(spacing: 8) {
-                Label("\(engine.stats.todayTriggers)", systemImage: "clock")
-                Label("\(engine.stats.totalTriggers)", systemImage: "sum")
+                HStack(spacing: 3) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 9))
+                    Text("\(engine.stats.todayTriggers)")
+                }
+                HStack(spacing: 3) {
+                    Image(systemName: "sum")
+                        .font(.system(size: 9))
+                    Text("\(engine.stats.totalTriggers)")
+                }
             }
-            .font(.system(size: 10, design: .monospaced))
+            .font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundColor(Theme.textTertiary)
+            .lineLimit(1)
+            .fixedSize()
 
             statusBadge
 
             if let triggered = engine.lastTriggered {
                 Text(triggered)
-                    .font(.system(size: 9))
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundColor(Theme.accentGreen)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
@@ -120,7 +133,7 @@ struct MenuBarView: View {
 
     private var statusBadge: some View {
         Button(action: { engine.toggle() }) {
-            HStack(spacing: 4) {
+            HStack(spacing: 5) {
                 Circle()
                     .fill(engine.isRunning ? Theme.statusActive : Theme.statusInactive)
                     .frame(width: 6, height: 6)
@@ -179,9 +192,9 @@ struct MenuBarView: View {
     // MARK: - Footer
 
     private var footerView: some View {
-        HStack(spacing: 12) {
-            Text("v1.0")
-                .font(.system(size: 10, design: .monospaced))
+        HStack(alignment: .center, spacing: 12) {
+            Text("v1.1")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundColor(Theme.textTertiary)
 
             Spacer()
@@ -189,34 +202,51 @@ struct MenuBarView: View {
             Button(action: { viewMode = .addGroup }) {
                 HStack(spacing: 3) {
                     Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .bold))
                     Text("分组")
+                        .font(.system(size: 11, weight: .medium))
                 }
-                .font(.system(size: 11))
                 .foregroundColor(Theme.accentBlue)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Theme.accentBlue.opacity(0.12))
+                .cornerRadius(5)
             }
             .buttonStyle(.plain)
             .help("新建分组")
 
             Button(action: { engine.reload() }) {
                 Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(Theme.textSecondary)
+                    .frame(width: 22, height: 22)
             }
             .buttonStyle(.plain)
             .help("重新加载配置")
 
             Button(action: { NSWorkspace.shared.open(ConfigManager.configDir) }) {
                 Image(systemName: "folder")
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(Theme.textSecondary)
+                    .frame(width: 22, height: 22)
             }
             .buttonStyle(.plain)
             .help("打开配置目录")
 
+            Button(action: { engine.cycleTheme() }) {
+                Image(systemName: engine.config.theme.iconName)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(Theme.textSecondary)
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.plain)
+            .help("主题: \(engine.config.theme.displayName) (点击切换)")
+
             Button(action: { NSApplication.shared.terminate(nil) }) {
                 Image(systemName: "xmark.circle")
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(Theme.textSecondary)
+                    .frame(width: 22, height: 22)
             }
             .buttonStyle(.plain)
             .help("退出")

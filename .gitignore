@@ -18,7 +18,6 @@ DerivedData/
 
 # Generated
 Mapping.xcodeproj/
-scripts/
 
 # macOS
 .DS_Store

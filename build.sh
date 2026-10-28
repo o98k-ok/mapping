@@ -8,9 +8,16 @@ APP_PATH="$BUILD_DIR/$APP_NAME.app"
 
 cd "$PROJECT_DIR"
 
-# Keep the checked-in Xcode project in sync with project.yml.
-echo "⚙️  Generating Xcode project..."
-xcodegen generate
+# Keep the checked-in Xcode project in sync with project.yml if xcodegen exists.
+if command -v xcodegen >/dev/null 2>&1; then
+    echo "⚙️  Generating Xcode project..."
+    xcodegen generate
+fi
+
+# Ensure AppIcon.icns exists
+if [ ! -f "$PROJECT_DIR/Mapping/Resources/AppIcon.icns" ]; then
+    "$PROJECT_DIR/Scripts/build_icns.sh"
+fi
 
 # Build
 echo "🔨 Building $APP_NAME..."
@@ -21,7 +28,16 @@ xcodebuild -project "$APP_NAME.xcodeproj" \
     CONFIGURATION_BUILD_DIR="$BUILD_DIR" \
     -quiet
 
-echo "✅ Build succeeded: $APP_PATH"
+# Ensure resources in app bundle
+mkdir -p "$APP_PATH/Contents/Resources"
+cp "$PROJECT_DIR/Mapping/Resources/AppIcon.icns" "$APP_PATH/Contents/Resources/AppIcon.icns"
+
+# Ensure stable self-signed identity so TCC accessibility grants persist across rebuilds
+SIGN_IDENTITY="$("$PROJECT_DIR/Scripts/ensure-signing-identity.sh")"
+echo "🔏 Signing with stable identity '$SIGN_IDENTITY'..."
+codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_PATH"
+
+echo "✅ Build & Signed succeeded: $APP_PATH"
 
 # Install to /Applications if --install flag
 if [ "$1" = "--install" ]; then

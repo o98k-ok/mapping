@@ -1,5 +1,6 @@
 import Cocoa
 import Combine
+import SwiftUI
 
 /// Central engine that coordinates event interception and action execution
 final class MappingEngine: ObservableObject {
@@ -9,6 +10,14 @@ final class MappingEngine: ObservableObject {
     @Published var isRunning = false
     @Published var lastTriggered: String?
     @Published var stats: UsageStats
+
+    var colorScheme: ColorScheme? {
+        switch config.theme {
+        case .dark: return .dark
+        case .light: return .light
+        case .system: return nil
+        }
+    }
 
     private let eventTap = EventTapManager()
     private let appWatcher = AppWatcher()
@@ -45,6 +54,16 @@ final class MappingEngine: ObservableObject {
 
     func saveConfig() {
         ConfigManager.save(config)
+    }
+
+    func setTheme(_ theme: AppThemeMode) {
+        config.theme = theme
+        saveConfig()
+    }
+
+    func cycleTheme() {
+        config.theme = config.theme.next
+        saveConfig()
     }
 
     // MARK: - CRUD
@@ -110,6 +129,11 @@ final class MappingEngine: ObservableObject {
     private func handleKeyEvent(_ event: CGEvent, type: CGEventType) -> CGEvent? {
         guard type == .keyDown else { return event }
 
+        // Ignore our own simulated key events to prevent feedback loops
+        if event.getIntegerValueField(.eventSourceUserData) == 0x4D4150 {
+            return event
+        }
+
         let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
         let flags = event.flags
         let frontmostBundleId = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
@@ -152,7 +176,15 @@ final class MappingEngine: ObservableObject {
     }
 
     private func handleAppActivation(_ app: NSRunningApplication) {
+        guard let frontmostId = app.bundleIdentifier,
+              frontmostId != Bundle.main.bundleIdentifier else { return }
+
         for group in config.groups where group.isEnabled {
+            // Check app filter
+            if let bundleIds = group.bundleIdentifiers {
+                guard bundleIds.contains(frontmostId) else { continue }
+            }
+
             for mapping in group.mappings where mapping.isEnabled {
                 guard mapping.trigger.type == .appActivation else { continue }
                 recordTrigger(mapping)
@@ -162,8 +194,11 @@ final class MappingEngine: ObservableObject {
     }
 
     private func recordTrigger(_ mapping: KeyMapping) {
-        stats.record(mappingId: mapping.id)
-        UsageStatsManager.save(stats)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.stats.record(mappingId: mapping.id)
+            UsageStatsManager.saveDebounced(self.stats)
+        }
     }
 
     // MARK: - Modifier Matching
@@ -190,39 +225,30 @@ final class MappingEngine: ObservableObject {
 
     private func executeActions(_ actions: [MappingAction]) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            var elapsed: UInt64 = 0
+            guard let self = self else { return }
             for action in actions {
-                if elapsed > 0 {
-                    Thread.sleep(forTimeInterval: Double(elapsed) / 1000.0)
-                    elapsed = 0
-                }
-                if action.type == .delay {
-                    elapsed = UInt64(action.delayMs ?? 0)
-                } else {
-                    DispatchQueue.main.sync {
-                        self?.executeAction(action)
+                switch action.type {
+                case .delay:
+                    let ms = action.delayMs ?? 50
+                    if ms > 0 {
+                        Thread.sleep(forTimeInterval: Double(ms) / 1000.0)
+                    }
+                case .openApp:
+                    if let bundleId = action.bundleId {
+                        DispatchQueue.main.async {
+                            self.openApp(bundleId: bundleId)
+                        }
+                    }
+                case .sendKeyCombo:
+                    if let key = action.key {
+                        KeySimulator.send(key: key, modifiers: action.modifiers ?? [])
+                    }
+                case .runShellScript:
+                    if let script = action.script {
+                        self.runShellScriptSync(script)
                     }
                 }
             }
-        }
-    }
-
-    private func executeAction(_ action: MappingAction) {
-        switch action.type {
-        case .openApp:
-            if let bundleId = action.bundleId {
-                openApp(bundleId: bundleId)
-            }
-        case .sendKeyCombo:
-            if let key = action.key {
-                KeySimulator.send(key: key, modifiers: action.modifiers ?? [])
-            }
-        case .runShellScript:
-            if let script = action.script {
-                runShellScript(script)
-            }
-        case .delay:
-            break // handled in executeActions
         }
     }
 
@@ -234,7 +260,7 @@ final class MappingEngine: ObservableObject {
         }
     }
 
-    private func runShellScript(_ script: String) {
+    private func runShellScriptSync(_ script: String) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
         process.arguments = ["-c", script]
@@ -242,13 +268,11 @@ final class MappingEngine: ObservableObject {
         env["PATH"] = "/usr/local/bin:/opt/homebrew/bin:" + (env["PATH"] ?? "")
         process.environment = env
 
-        DispatchQueue.global(qos: .utility).async {
-            do {
-                try process.run()
-                process.waitUntilExit()
-            } catch {
-                print("[Mapping] Shell script error: \(error)")
-            }
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            print("[Mapping] Shell script error: \(error)")
         }
     }
 }

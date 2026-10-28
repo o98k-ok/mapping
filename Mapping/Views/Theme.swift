@@ -1,27 +1,73 @@
 import SwiftUI
+import AppKit
 
 enum Theme {
+    static var isLight: Bool {
+        switch MappingEngine.shared.config.theme {
+        case .light:
+            return true
+        case .dark:
+            return false
+        case .system:
+            if let appearance = NSApp?.effectiveAppearance {
+                return appearance.bestMatch(from: [.darkAqua, .aqua]) == .aqua
+            }
+            return false
+        }
+    }
+
     // Background colors
-    static let popoverBackground = Color(hex: "#1C1C1E")
-    static let cardBackground = Color(hex: "#2C2C2E")
-    static let cardBackgroundHover = Color(hex: "#3A3A3C")
+    static var popoverBackground: Color {
+        isLight ? Color(hex: "#F5F5F7") : Color(hex: "#1C1C1E")
+    }
+    static var cardBackground: Color {
+        isLight ? Color(hex: "#FFFFFF") : Color(hex: "#2C2C2E")
+    }
+    static var cardBackgroundHover: Color {
+        isLight ? Color(hex: "#E5E5EA") : Color(hex: "#3A3A3C")
+    }
+    static var cardBorder: Color {
+        isLight ? Color.black.opacity(0.08) : Color.white.opacity(0.05)
+    }
 
     // Text colors
-    static let textPrimary = Color.white
-    static let textSecondary = Color(hex: "#ABABAB")
-    static let textTertiary = Color(hex: "#636366")
+    static var textPrimary: Color {
+        isLight ? Color(hex: "#1D1D1F") : Color.white
+    }
+    static var textSecondary: Color {
+        isLight ? Color(hex: "#6E6E73") : Color(hex: "#ABABAB")
+    }
+    static var textTertiary: Color {
+        isLight ? Color(hex: "#8E8E93") : Color(hex: "#636366")
+    }
 
     // Accent colors
-    static let accentGreen = Color(hex: "#6BD35F")
-    static let accentBlue = Color(hex: "#5B8DEF")
-    static let accentPurple = Color(hex: "#C678DD")
-    static let accentRed = Color(hex: "#E06C75")
-    static let accentOrange = Color(hex: "#E5A05B")
-    static let accentCyan = Color(hex: "#56B6C2")
+    static var accentGreen: Color {
+        isLight ? Color(hex: "#288A36") : Color(hex: "#6BD35F")
+    }
+    static var accentBlue: Color {
+        isLight ? Color(hex: "#0066CC") : Color(hex: "#5B8DEF")
+    }
+    static var accentPurple: Color {
+        isLight ? Color(hex: "#8E24AA") : Color(hex: "#C678DD")
+    }
+    static var accentRed: Color {
+        isLight ? Color(hex: "#D32F2F") : Color(hex: "#E06C75")
+    }
+    static var accentOrange: Color {
+        isLight ? Color(hex: "#E65100") : Color(hex: "#E5A05B")
+    }
+    static var accentCyan: Color {
+        isLight ? Color(hex: "#00838F") : Color(hex: "#56B6C2")
+    }
 
     // Status colors
-    static let statusActive = Color(hex: "#34C759")
-    static let statusInactive = Color(hex: "#FF3B30")
+    static var statusActive: Color {
+        Color(hex: "#34C759")
+    }
+    static var statusInactive: Color {
+        Color(hex: "#FF3B30")
+    }
 
     // Corner radius
     static let cornerRadius: CGFloat = 12
@@ -29,12 +75,31 @@ enum Theme {
     static let badgeCornerRadius: CGFloat = 6
 
     // Popover size
-    static let popoverWidth: CGFloat = 360
-    static let popoverMaxHeight: CGFloat = 520
+    static let popoverWidth: CGFloat = 380
+    static let popoverMaxHeight: CGFloat = 540
     // Height reserved for the non-scrolling chrome (header + dividers + footer).
-    static let popoverChromeHeight: CGFloat = 92
+    static let popoverChromeHeight: CGFloat = 94
     // Max height the scrollable list may take before it starts scrolling.
     static var scrollMaxHeight: CGFloat { popoverMaxHeight - popoverChromeHeight }
+
+    // Native Keycap Style
+    static var keycapBackground: Color {
+        isLight ? Color(hex: "#EAEAEF") : Color(hex: "#3A3A3C")
+    }
+    static var keycapBorder: Color {
+        isLight ? Color.black.opacity(0.12) : Color.white.opacity(0.1)
+    }
+    static var keycapText: Color {
+        isLight ? Color(hex: "#2C2C2E") : Color(hex: "#F2F2F7")
+    }
+
+    // Input & Form Field Style
+    static var inputBackground: Color {
+        isLight ? Color(hex: "#F2F2F7") : Color(hex: "#242426")
+    }
+    static var inputBorder: Color {
+        isLight ? Color.black.opacity(0.1) : Color.white.opacity(0.08)
+    }
 
     static func groupColor(_ hex: String) -> Color {
         Color(hex: hex)
