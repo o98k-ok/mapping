@@ -33,6 +33,14 @@ struct MappingRowView: View {
                     .padding(.vertical, 2)
                     .background(Theme.accentGreen.opacity(0.12))
                     .cornerRadius(4)
+            } else if mapping.trigger.type == .stateWatch {
+                Text("守护")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(Theme.accentPurple)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Theme.accentPurple.opacity(0.12))
+                    .cornerRadius(4)
             }
 
             actionIcon

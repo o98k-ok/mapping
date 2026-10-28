@@ -77,6 +77,7 @@ cd mapping
 |------|------|------|
 | `hotkey` | 按下快捷键触发 | `{"type": "hotkey", "key": "g", "modifiers": ["option"]}` |
 | `appActivation` | 应用切换到前台时触发 | `{"type": "appActivation"}` |
+| `stateWatch` | 每隔 `intervalSeconds` 秒运行 `stateScript` 取当前状态（取其 stdout），与 `expectedState` 不符时执行动作。分组限定了应用时只在那些应用在前台时守护，全局分组则全局守护。间隔、脚本、期望三项缺一或脚本失败时跳过、不执行 | `{"type": "stateWatch", "intervalSeconds": 3, "stateScript": "im-select", "expectedState": "com.baidu.inputmethod.BaiduIM.pinyin"}` |
 
 ### 动作类型
 

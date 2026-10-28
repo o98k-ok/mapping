@@ -21,6 +21,8 @@ final class MappingEngine: ObservableObject {
 
     private let eventTap = EventTapManager()
     private let appWatcher = AppWatcher()
+    private var watchTimer: Timer?
+    private var lastWatchCheck: [UUID: Date] = [:]
 
     private init() {
         config = ConfigManager.load()
@@ -35,12 +37,15 @@ final class MappingEngine: ObservableObject {
         guard !isRunning else { return }
         let tapStarted = eventTap.start()
         appWatcher.start()
+        startWatchTimer()
         isRunning = tapStarted
     }
 
     func stop() {
         eventTap.stop()
         appWatcher.stop()
+        watchTimer?.invalidate()
+        watchTimer = nil
         isRunning = false
     }
 
@@ -189,6 +194,59 @@ final class MappingEngine: ObservableObject {
                 guard mapping.trigger.type == .appActivation else { continue }
                 recordTrigger(mapping)
                 executeActions(mapping.actions)
+            }
+        }
+    }
+
+    // MARK: - State Watch
+
+    private func startWatchTimer() {
+        watchTimer?.invalidate()
+        watchTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.checkWatchedStates()
+        }
+    }
+
+    /// Poll watched states. A group with bundleIdentifiers only guards while
+    /// one of those apps is frontmost; a global group guards everywhere.
+    private func checkWatchedStates() {
+        guard let frontmostId = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+              frontmostId != Bundle.main.bundleIdentifier else { return }
+
+        let now = Date()
+        for group in config.groups where group.isEnabled {
+            if let bundleIds = group.bundleIdentifiers, !bundleIds.contains(frontmostId) {
+                continue
+            }
+            for mapping in group.mappings where mapping.isEnabled {
+                // stateWatch needs interval + fetch script + expected state;
+                // anything missing means it never fires.
+                guard mapping.trigger.type == .stateWatch,
+                      let rawScript = mapping.trigger.stateScript,
+                      !rawScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      let rawExpected = mapping.trigger.expectedState,
+                      !rawExpected.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    continue
+                }
+                let script = rawScript
+                let expected = rawExpected.trimmingCharacters(in: .whitespacesAndNewlines)
+                let interval = TimeInterval(max(1, mapping.trigger.intervalSeconds ?? 3))
+                if let last = lastWatchCheck[mapping.id], now.timeIntervalSince(last) < interval {
+                    continue
+                }
+                lastWatchCheck[mapping.id] = now
+
+                // Fetch state off the main thread: a user script may be slow.
+                // A failed fetch (nil) never triggers actions.
+                DispatchQueue.global(qos: .utility).async { [weak self] in
+                    guard let current = StateSource.currentState(script: script),
+                          current != expected else { return }
+                    DispatchQueue.main.async {
+                        self?.lastTriggered = mapping.name
+                    }
+                    self?.recordTrigger(mapping)
+                    self?.executeActions(mapping.actions)
+                }
             }
         }
     }

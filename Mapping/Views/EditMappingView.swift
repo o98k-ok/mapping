@@ -9,6 +9,9 @@ struct EditMappingView: View {
     @State private var triggerType: MappingTrigger.TriggerType = .hotkey
     @State private var triggerKey = ""
     @State private var triggerModifiers: [KeyModifier] = []
+    @State private var intervalSeconds = 3
+    @State private var stateScript = ""
+    @State private var expectedState = ""
     @State private var actions: [MappingAction] = []
 
     var isEditing: Bool { existingMapping != nil }
@@ -99,6 +102,7 @@ struct EditMappingView: View {
             Picker("", selection: $triggerType) {
                 Text("快捷键").tag(MappingTrigger.TriggerType.hotkey)
                 Text("应用激活").tag(MappingTrigger.TriggerType.appActivation)
+                Text("状态守护").tag(MappingTrigger.TriggerType.stateWatch)
             }
             .pickerStyle(.segmented)
             .frame(maxWidth: .infinity)
@@ -106,13 +110,85 @@ struct EditMappingView: View {
             if triggerType == .hotkey {
                 HotkeyRecorderView(key: $triggerKey, modifiers: $triggerModifiers)
                     .frame(maxWidth: .infinity)
-            } else {
+            } else if triggerType == .appActivation {
                 Text("当匹配的应用激活或切换到前台时，自动执行下方动作")
                     .font(.system(size: 11))
                     .foregroundColor(Theme.textTertiary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
+            } else {
+                stateWatchFields
             }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var stateWatchFields: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("获取状态脚本，如 im-select（必填）", text: $stateScript)
+                .textFieldStyle(.plain)
+                .font(.system(size: 11, design: .monospaced))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Theme.inputBackground)
+                .cornerRadius(7)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7)
+                        .stroke(Theme.inputBorder, lineWidth: 1)
+                )
+                .foregroundColor(Theme.textPrimary)
+                .frame(maxWidth: .infinity)
+            HStack(spacing: 8) {
+                TextField("期望状态（脚本的输出）", text: $expectedState)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 11, design: .monospaced))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Theme.inputBackground)
+                    .cornerRadius(7)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7)
+                            .stroke(Theme.inputBorder, lineWidth: 1)
+                    )
+                    .foregroundColor(Theme.textPrimary)
+                Button("用当前") {
+                    let script = stateScript
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        if let current = StateSource.currentState(script: script) {
+                            DispatchQueue.main.async { expectedState = current }
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Theme.accentBlue)
+            }
+            HStack(spacing: 8) {
+                Text("每隔")
+                    .font(.system(size: 12))
+                    .foregroundColor(Theme.textSecondary)
+                TextField("秒", value: $intervalSeconds, format: .number)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12, design: .monospaced))
+                    .multilineTextAlignment(.trailing)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Theme.inputBackground)
+                    .cornerRadius(6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Theme.inputBorder, lineWidth: 1)
+                    )
+                    .foregroundColor(Theme.textPrimary)
+                    .frame(width: 60)
+                Text("秒查一次，不符就执行下方动作")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.textTertiary)
+            }
+            Text("分组限定了应用时，只在那些应用在前台时守护；全局分组则哪里都守护。间隔、获取脚本、期望状态缺一则不生效；脚本输出与期望状态不一致才执行动作，脚本失败则跳过。")
+                .font(.system(size: 11))
+                .foregroundColor(Theme.textTertiary)
+                .padding(.horizontal, 6)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -367,7 +443,13 @@ struct EditMappingView: View {
     // MARK: - Helpers
 
     private var canSave: Bool {
-        !name.isEmpty && !actions.isEmpty
+        guard !name.isEmpty && !actions.isEmpty else { return false }
+        if triggerType == .stateWatch {
+            return !expectedState.trimmingCharacters(in: .whitespaces).isEmpty
+                && !stateScript.trimmingCharacters(in: .whitespaces).isEmpty
+                && intervalSeconds >= 1
+        }
+        return true
     }
 
     private func sectionLabel(_ text: String) -> some View {
@@ -386,15 +468,26 @@ struct EditMappingView: View {
         triggerType = m.trigger.type
         triggerKey = m.trigger.key ?? ""
         triggerModifiers = m.trigger.modifiers ?? []
+        intervalSeconds = m.trigger.intervalSeconds ?? 3
+        stateScript = m.trigger.stateScript ?? ""
+        expectedState = m.trigger.expectedState ?? ""
         actions = m.actions
     }
 
     private func save() {
         let trigger: MappingTrigger
-        if triggerType == .hotkey {
+        switch triggerType {
+        case .hotkey:
             trigger = .hotkey(triggerKey, triggerModifiers)
-        } else {
+        case .appActivation:
             trigger = .appActivation
+        case .stateWatch:
+            let script = stateScript.trimmingCharacters(in: .whitespaces)
+            trigger = .stateWatch(
+                intervalSeconds: intervalSeconds,
+                stateScript: script.isEmpty ? nil : script,
+                expectedState: expectedState.trimmingCharacters(in: .whitespaces)
+            )
         }
 
         let mapping = KeyMapping(
