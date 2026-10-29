@@ -23,6 +23,8 @@ final class MappingEngine: ObservableObject {
     private let appWatcher = AppWatcher()
     private var watchTimer: Timer?
     private var lastWatchCheck: [UUID: Date] = [:]
+    /// Watches whose state script is still running; main thread only.
+    private var watchInFlight: Set<UUID> = []
 
     private init() {
         config = ConfigManager.load()
@@ -231,16 +233,23 @@ final class MappingEngine: ObservableObject {
                 let script = rawScript
                 let expected = rawExpected.trimmingCharacters(in: .whitespacesAndNewlines)
                 let interval = TimeInterval(max(1, mapping.trigger.intervalSeconds ?? 3))
+                if watchInFlight.contains(mapping.id) {
+                    continue
+                }
                 if let last = lastWatchCheck[mapping.id], now.timeIntervalSince(last) < interval {
                     continue
                 }
                 lastWatchCheck[mapping.id] = now
+                watchInFlight.insert(mapping.id)
 
                 // Fetch state off the main thread: a user script may be slow.
                 // A failed fetch (nil) never triggers actions.
                 DispatchQueue.global(qos: .utility).async { [weak self] in
-                    guard let current = StateSource.currentState(script: script),
-                          current != expected else { return }
+                    let current = StateSource.currentState(script: script)
+                    DispatchQueue.main.async {
+                        self?.watchInFlight.remove(mapping.id)
+                    }
+                    guard let current, current != expected else { return }
                     DispatchQueue.main.async {
                         self?.lastTriggered = mapping.name
                     }
@@ -303,7 +312,7 @@ final class MappingEngine: ObservableObject {
                     }
                 case .runShellScript:
                     if let script = action.script {
-                        self.runShellScriptSync(script)
+                        Shell.run(script)
                     }
                 }
             }
@@ -315,22 +324,6 @@ final class MappingEngine: ObservableObject {
     private func openApp(bundleId: String) {
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
             NSWorkspace.shared.openApplication(at: url, configuration: .init())
-        }
-    }
-
-    private func runShellScriptSync(_ script: String) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = ["-c", script]
-        var env = ProcessInfo.processInfo.environment
-        env["PATH"] = "/usr/local/bin:/opt/homebrew/bin:" + (env["PATH"] ?? "")
-        process.environment = env
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            print("[Mapping] Shell script error: \(error)")
         }
     }
 }
