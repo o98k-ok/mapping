@@ -124,10 +124,18 @@ struct MappingTrigger: Codable {
     var type: TriggerType
     var key: String?
     var modifiers: [KeyModifier]?
+    /// Polling interval for stateWatch, in seconds
+    var intervalSeconds: Int?
+    /// Script whose trimmed stdout is the current state for stateWatch.
+    /// Required: a missing or blank script never triggers.
+    var stateScript: String?
+    /// Expected state for stateWatch; actions run when current state differs
+    var expectedState: String?
 
     enum TriggerType: String, Codable {
         case hotkey
         case appActivation
+        case stateWatch
     }
 
     static func hotkey(_ key: String, _ modifiers: [KeyModifier]) -> MappingTrigger {
@@ -136,6 +144,15 @@ struct MappingTrigger: Codable {
 
     static var appActivation: MappingTrigger {
         MappingTrigger(type: .appActivation)
+    }
+
+    static func stateWatch(intervalSeconds: Int, stateScript: String?, expectedState: String) -> MappingTrigger {
+        MappingTrigger(
+            type: .stateWatch,
+            intervalSeconds: max(1, intervalSeconds),
+            stateScript: stateScript,
+            expectedState: expectedState
+        )
     }
 }
 
