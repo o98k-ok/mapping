@@ -1,64 +1,78 @@
-# Mapping
+<p align="center">
+  <img src="docs/assets/cover.jpg" width="100%" alt="Mapping · Your keys. Your workflow.">
+</p>
+
+<h1 align="center">Mapping</h1>
 
 <p align="center">
-  <img src="Mapping/Assets.xcassets/AppIcon.appiconset/icon_1024.png" width="128" height="128" alt="Mapping Icon">
+  把常用操作，交给顺手的快捷键。<br>
+  macOS 菜单栏工具，管理快捷键、按键映射和自动动作。
 </p>
 
 <p align="center">
-  macOS 菜单栏快捷键管理工具 —— 轻量、快速、可视化配置
+  <a href="https://github.com/o98k-ok/mapping/releases/latest"><strong>下载 DMG</strong></a>
+  &nbsp; · &nbsp;
+  <a href="#开始使用">开始使用</a>
+  &nbsp; · &nbsp;
+  <a href="#配置与构建">配置与构建</a>
 </p>
 
-## 功能
+<p align="center">
+  <sub>macOS 14+ &nbsp; / &nbsp; Apple Silicon & Intel &nbsp; / &nbsp; 中文 & English &nbsp; / &nbsp; SwiftUI</sub>
+</p>
 
-- **全局快捷键** — 一键启动任意应用（Option+G 打开 Chrome 等）
-- **应用内按键重映射** — 在特定应用中重新定义快捷键（如 Wave 终端的 Block 切换）
-- **应用激活触发** — 切换到任意应用时自动执行动作（如自动切换输入法）
-- **脚本执行** — 触发时运行任意 Shell 脚本
-- **延迟控制** — 多步动作之间插入精确的毫秒级延迟
-- **使用统计** — 跟踪每个快捷键的触发次数
-- **可视化配置** — 菜单栏弹窗中直接添加/编辑/删除分组和映射，支持快捷键录制
+---
 
-## 截图
+## 少点几次，多做一点
 
-菜单栏 ⌘ 图标，点击展开管理面板：
+| 你想做的事 | Mapping 来完成 |
+| :--- | :--- |
+| **一键打开应用** | 设置全局快捷键，比如按下 `⌥ G` 打开 Safari。 |
+| **换成习惯的按键** | 为指定应用重映射快捷键，不影响其他应用。 |
+| **切换应用时自动执行** | 应用进入前台时运行脚本或发送按键，比如通过脚本切换输入法。 |
+| **把几步操作连起来** | 组合打开应用、发送按键、执行脚本和延迟动作。 |
+| **定时检查状态** | 用脚本读取状态，与期望值不符时执行动作。 |
 
-- 分组管理：按颜色和图标区分，支持限定特定应用
-- 映射列表：显示触发键、动作类型，hover 显示编辑/删除
-- 快捷键录制：点击录制框，按下组合键即可捕获
-- 使用统计：头部显示今日/总触发次数
+点击菜单栏 **⌘**，就能录制快捷键、编辑分组和开关规则。支持颜色与图标分组、使用次数统计，以及深色、浅色和跟随系统主题。
 
-## 安装
+## 开始使用
 
-### 从源码构建
+1. 从 **[最新 Release](https://github.com/o98k-ok/mapping/releases/latest)** 下载 DMG，将 Mapping 拖入 Applications。
+2. 打开应用，在 **系统设置 → 隐私与安全 → 辅助功能** 中授权 Mapping。
+3. 点击菜单栏 **⌘**，新建分组，添加映射，录制快捷键并选择动作。
+
+底部的地球菜单可切换 **中文 / English**，选择会自动保存。默认中文，已有分组名、映射名和脚本不会被翻译。
+
+> **首次打开提示**：当前发布包使用自签名，未经过 Apple 公证。若被系统拦截，请在「系统设置 → 隐私与安全」中确认允许打开。升级后可能需要重新授予辅助功能权限。
+
+## 配置与构建
+
+日常设置可直接在界面中完成。配置保存在 `~/.config/mapping/config.json`，手动编辑后点击面板底部的重新加载按钮。
+
+<details>
+<summary><strong>从源码构建</strong></summary>
+
+需要 Xcode 16+ 和 XcodeGen。
 
 ```bash
-# 依赖：Xcode 16+, XcodeGen
 brew install xcodegen
-
 git clone https://github.com/o98k-ok/mapping.git
 cd mapping
-
-# 构建
-./build.sh
-
-# 构建并运行
 ./build.sh --run
-
-# 构建并安装到 /Applications
-./build.sh --install
 ```
 
-> ⚠️ 首次启动需要在 **系统设置 → 隐私与安全 → 辅助功能** 中授权 Mapping
+只构建可运行 `./build.sh`，安装到 Applications 可运行 `./build.sh --install`。
 
-## 配置
+</details>
 
-配置文件位于 `~/.config/mapping/config.json`，也可以通过菜单栏 GUI 直接编辑。
+<details>
+<summary><strong>配置格式与动作参考</strong></summary>
 
-点击面板底部的地球图标，在「中文」和「English」之间切换，立即生效并保存。
-也可以设置配置文件顶层的 `"language": "en"`（英文）或 `"language": "zh-Hans"`（中文），然后重新加载配置。
-未配置时默认中文。语言设置只影响界面文案，不会修改已有分组名、映射名或脚本。
+顶层 `language` 可设为 `en` 或 `zh-Hans`，未配置时默认中文。
 
 ### 配置结构
+
+下面展示主要字段，完整示例见 [DefaultConfig.json](Mapping/Resources/DefaultConfig.json)。
 
 ```json
 {
@@ -69,7 +83,7 @@ cd mapping
       "icon": "keyboard",
       "isEnabled": true,
       "bundleIdentifiers": ["com.example.app"],
-      "mappings": [...]
+      "mappings": []
     }
   ]
 }
@@ -110,14 +124,10 @@ cd mapping
 }
 ```
 
-## 技术栈
+</details>
 
-- **Swift + SwiftUI** — 原生 macOS 开发
-- **MenuBarExtra** — macOS 14+ 菜单栏 API
-- **CGEventTap** — 系统级键盘事件拦截
-- **CGEventPost** — 按键模拟
-- **NSWorkspace** — 应用监控与启动
+---
 
-## License
-
-MIT
+<p align="center">
+  <sub>用 Swift 与 SwiftUI 构建 · MIT License</sub>
+</p>
