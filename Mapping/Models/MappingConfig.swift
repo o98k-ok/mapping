@@ -35,29 +35,46 @@ enum AppThemeMode: String, Codable, CaseIterable {
 
 // MARK: - Configuration Root
 
+enum AppLanguage: String, Codable, CaseIterable {
+    case chinese = "zh-Hans"
+    case english = "en"
+
+    var displayName: String {
+        switch self {
+        case .chinese: return "中文"
+        case .english: return "English"
+        }
+    }
+}
+
 struct MappingConfiguration: Codable {
     var theme: AppThemeMode
+    var language: AppLanguage
     var groups: [MappingGroup]
 
     enum CodingKeys: String, CodingKey {
         case theme
+        case language
         case groups
     }
 
-    init(theme: AppThemeMode = .dark, groups: [MappingGroup] = []) {
+    init(theme: AppThemeMode = .dark, language: AppLanguage = .chinese, groups: [MappingGroup] = []) {
         self.theme = theme
+        self.language = language
         self.groups = groups
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         theme = (try? c.decode(AppThemeMode.self, forKey: .theme)) ?? .dark
+        language = (try? c.decode(AppLanguage.self, forKey: .language)) ?? .chinese
         groups = (try? c.decode([MappingGroup].self, forKey: .groups)) ?? []
     }
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(theme, forKey: .theme)
+        try c.encode(language, forKey: .language)
         try c.encode(groups, forKey: .groups)
     }
 }

@@ -63,7 +63,7 @@ struct EditGroupView: View {
 
             Spacer()
 
-            Text(isEditing ? "编辑分组" : "新建分组")
+            Text(isEditing ? LocalizedStringKey("编辑分组") : LocalizedStringKey("新建分组"))
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Theme.textPrimary)
 
@@ -259,7 +259,7 @@ struct EditGroupView: View {
 
     // MARK: - Helpers
 
-    private func sectionLabel(_ text: String) -> some View {
+    private func sectionLabel(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.system(size: 11, weight: .medium))
             .foregroundColor(Theme.textSecondary)

@@ -48,6 +48,7 @@ struct MenuBarView: View {
         }
         .animation(.easeInOut(duration: 0.15), value: viewMode)
         .id(engine.config.theme)
+        .environment(\.locale, Locale(identifier: engine.config.language.rawValue))
         .preferredColorScheme(engine.colorScheme)
     }
 
@@ -137,7 +138,7 @@ struct MenuBarView: View {
                 Circle()
                     .fill(engine.isRunning ? Theme.statusActive : Theme.statusInactive)
                     .frame(width: 6, height: 6)
-                Text(engine.isRunning ? "运行中" : "已停止")
+                Text(engine.isRunning ? LocalizedStringKey("运行中") : LocalizedStringKey("已停止"))
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(engine.isRunning ? Theme.statusActive : Theme.statusInactive)
             }
@@ -193,9 +194,25 @@ struct MenuBarView: View {
 
     private var footerView: some View {
         HStack(alignment: .center, spacing: 12) {
-            Text("v1.1")
+            Text("v1.2.0")
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundColor(Theme.textTertiary)
+
+            Menu {
+                Picker("语言", selection: $engine.config.language) {
+                    ForEach(AppLanguage.allCases, id: \.self) { language in
+                        Text(verbatim: language.displayName).tag(language)
+                    }
+                }
+            } label: {
+                Image(systemName: "globe")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(Theme.textSecondary)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help("语言 / Language")
+            .onChange(of: engine.config.language) { _, _ in engine.saveConfig() }
 
             Spacer()
 
@@ -240,7 +257,7 @@ struct MenuBarView: View {
                     .frame(width: 22, height: 22)
             }
             .buttonStyle(.plain)
-            .help("主题: \(engine.config.theme.displayName) (点击切换)")
+            .help(Text("主题（点击切换）") + Text(": ") + Text(LocalizedStringKey(engine.config.theme.displayName)))
 
             Button(action: { NSApplication.shared.terminate(nil) }) {
                 Image(systemName: "xmark.circle")

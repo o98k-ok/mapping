@@ -58,7 +58,7 @@ struct EditMappingView: View {
 
             Spacer()
 
-            Text(isEditing ? "编辑映射" : "新建映射")
+            Text(isEditing ? LocalizedStringKey("编辑映射") : LocalizedStringKey("新建映射"))
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Theme.textPrimary)
 
@@ -262,7 +262,7 @@ struct EditMappingView: View {
                 // Type picker
                 Picker("", selection: $actions[index].type) {
                     ForEach(MappingAction.ActionType.allCases, id: \.self) { t in
-                        Text(t.displayName).tag(t)
+                        Text(LocalizedStringKey(t.displayName)).tag(t)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -452,7 +452,7 @@ struct EditMappingView: View {
         return true
     }
 
-    private func sectionLabel(_ text: String) -> some View {
+    private func sectionLabel(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.system(size: 11, weight: .medium))
             .foregroundColor(Theme.textSecondary)
