@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SECONDS=0
+case "$(uname -s)" in
+    Linux)
+        echo '==> Preparing Linux source-check tools (the app requires macOS)'
+        missing=()
+        for package in shellcheck python3; do
+            if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -qx 'install ok installed'; then
+                missing+=("$package")
+            fi
+        done
+        if ((${#missing[@]})); then
+            sudo apt-get update -qq
+            sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${missing[@]}"
+        fi
+        shellcheck --version
+        python3 --version
+        echo '==> Build and Swift tests require a Mac satellite; see AGENTS.md'
+        ;;
+    Darwin)
+        echo '==> Checking Xcode and preparing XcodeGen'
+        xcodebuild -version
+        xcode_major="$(xcodebuild -version | awk '/^Xcode / {split($2, version, "."); print version[1]}')"
+        if [[ -z "$xcode_major" ]] || ((xcode_major < 16)); then
+            echo 'Xcode 16 or newer is required.' >&2
+            exit 1
+        fi
+        if ! command -v xcodegen >/dev/null 2>&1; then
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install xcodegen
+        fi
+        xcodegen --version
+        ;;
+    *)
+        echo 'Unsupported platform: use a Linux orb with a Mac satellite.' >&2
+        exit 1
+        ;;
+esac
+echo "==> Setup finished in ${SECONDS}s"

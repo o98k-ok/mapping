@@ -23,3 +23,6 @@ Mapping.xcodeproj/
 .DS_Store
 *.swp
 *~
+
+# Orb portal metadata
+.amp/portals/*

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# No services, authentication, or per-thread environment need restoring.
+echo '==> Mapping ready; native builds and Swift tests require a Mac satellite.'
