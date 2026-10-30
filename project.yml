@@ -23,6 +23,9 @@ targets:
       path: Mapping/Resources/Info.plist
       properties:
         LSUIElement: true
+        CFBundleShortVersionString: "1.2.0"
+        CFBundleVersion: "3"
+        CFBundleIconFile: AppIcon
     entitlements:
       path: Mapping/Mapping.entitlements
     settings:
